@@ -7,7 +7,8 @@ LISTEN_PORT = 12_345
 MSG_LENGTH  = 256
 FLAGS       = 0
 
-# Create socket and bind it to the listen on all addresses and the given port
+# Create socket and bind it to the listen on all addresses and the
+# given port
 server_socket = UDPSocket.new :INET6
 server_socket.bind(LISTEN_ADDR, LISTEN_PORT)
 
@@ -20,9 +21,10 @@ loop do
   puts "Client connected from #{addr_info.ip_address} using " +
        (addr_info.ipv6_v4mapped? ? 'IPv4' : 'IPv6')
 
-  # Write back to client with AddressFamily and reversed original message
+  # Write back to client with AddressFamily and reversed original
+  # message
   server_socket.send(
-    "[#{addr_info.ipv6_v4mapped? ? 'IPv4' : 'IPv6'}] #{message.chomp.reverse}",
+    "[#{addr_info.ipv6_v4mapped? ? 'IPv4' : 'IPv6'}] #{message.chomp}",
     FLAGS,
     addr_info.ip_address,
     addr_info.ip_port

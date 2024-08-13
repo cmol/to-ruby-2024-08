@@ -3,21 +3,36 @@
 require 'socket'
 require 'ipaddr'
 
-def get_interface_info(name)
-  ifaddrs = Socket.getifaddrs.reject do |ifaddr|
-    !ifaddr.addr&.ipv6_linklocal? || (ifaddr.flags & Socket::IFF_MULTICAST).zero?
+def get_interface_info(name) # rubocop:disable Metrics/AbcSize
+  ifaceses = Socket.getifaddrs.reject do |iface|
+    !iface.addr&.ipv6_linklocal? ||
+      (iface.flags & Socket::IFF_MULTICAST).zero?
   end
-  ifaddrs.select! { |ifaddr| ifaddr.name == name } if name
-  ifaddrs.map { |ifaddr| [ifaddr.name, ifaddr.ifindex, ifaddr.addr.ip_address] }
+  ifaceses.select! { |ifaddr| ifaddr.name == name } if name
+  ifaceses.map do |ifaddr|
+    [ifaddr.name, ifaddr.ifindex, ifaddr.addr.ip_address]
+  end
 end
 
 # Set-up and prepare socket
-def create_socket(multicast_addr, multicast_port, ifindex)
+def create_socket(multicast_addr, multicast_port, ifindex) # rubocop:disable Metrics/MethodLength
   UDPSocket.new(Socket::AF_INET6).tap do |s|
     ip = IPAddr.new(multicast_addr).hton + [ifindex].pack('I')
-    s.setsockopt(Socket::IPPROTO_IPV6, Socket::IPV6_JOIN_GROUP, ip)
-    s.setsockopt(Socket::IPPROTO_IPV6, Socket::IPV6_MULTICAST_HOPS, [1].pack('I'))
-    s.setsockopt(Socket::IPPROTO_IPV6, Socket::IPV6_MULTICAST_IF, [ifindex].pack('I'))
+    s.setsockopt(
+      Socket::IPPROTO_IPV6,
+      Socket::IPV6_JOIN_GROUP,
+      ip
+    )
+    s.setsockopt(
+      Socket::IPPROTO_IPV6,
+      Socket::IPV6_MULTICAST_HOPS,
+      [1].pack('I')
+    )
+    s.setsockopt(
+      Socket::IPPROTO_IPV6,
+      Socket::IPV6_MULTICAST_IF,
+      [ifindex].pack('I')
+    )
     s.bind('::', multicast_port)
   end
 end
@@ -67,7 +82,8 @@ if __FILE__ == $PROGRAM_NAME
 
   # Call with interface name if you want to use another interface than the
   # first one presented from getifaddrs
-  interface_name, ifindex, linklocal_addr = get_interface_info(ARGV[0]).first
+  interface_name, ifindex, linklocal_addr =
+    get_interface_info(ARGV[0]).first
   puts "Using local interface #{interface_name} with address #{linklocal_addr}"
 
   socket = create_socket(MULTICAST_ADDR, MULTICAST_PORT, ifindex)
